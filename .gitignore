@@ -10,3 +10,4 @@ articles/*.html
 articles/*.xml
 articles/*.txt
 articles/_refiles/
+.claude/
