@@ -219,3 +219,5 @@ HTTPの登場時から存在し続けるUser-Agentは、その歴史の長さゆ
 
 【TODO】UA-CH関連のリファレンスリンク（W3Cの仕様ドキュメント、Chromiumのドキュメントなど）を追加【TODO】
 【TODO】参考文献のフォーマットを整える【TODO】
+
+【TODO】LLMの例、AIによるfetchの挙動も調べてどこかに挿入する【TODO】
