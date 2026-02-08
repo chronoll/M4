@@ -1,5 +1,7 @@
 = User-Agentとは何か ― その歴史・課題・そしてこれから
 
+こんにちは、クロタカ(@chronoll)です。私からは、User-Agentについて調べたことをまとめていきます！
+
 == はじめに
 
 HTTPの @<code>{User-Agent} リクエストヘッダーといえば、Webに関わるエンジニアであれば一度は目にしたことがあるでしょう。しかし、その仕組みや歴史的背景まで深掘りした経験のある方は意外と少ないのではないでしょうか。
@@ -99,7 +101,7 @@ Allow: /
 実際のrobots.txtは、ブラウザで @<code>{サイトのURL/robots.txt} にアクセスするだけで誰でも確認できます。https://github.com/robots.txt のように確認してみましょう。
 
 //emlist{
-# If you would like to crawl GitHub contact us via https://support.github.com?tags==dotcom-robots
+# If you would like to crawl GitHub contact us ...
 # We also provide an extensive API: https://docs.github.com
 User-agent: bingbot
 Disallow: /ekansa/Open-Context-Data
