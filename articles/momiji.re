@@ -800,6 +800,8 @@ Axon Framework の中で実際に何が起きていたのかを、
 
 （ログの内容は一部簡略化しています）
 
+//pagebreak
+
 //emlist{
 [1] Received request to create order
 [2] Sending CreateOrderCommand
@@ -947,6 +949,8 @@ Axon Framework の基本的な流れを整理すると、
 実際のコードを見ながら、
 それぞれの役割を確認していきます。
 
+// pagebreak
+
 === コードはこの順番で読む
 
 ここまでで、
@@ -985,14 +989,17 @@ Axon Framework の基本的な流れを整理すると、
 @PostMapping("/order")
 public CreateOrderResponse createOrder(@RequestBody CreateOrderRequest request) {
     String orderId = UUID.randomUUID().toString();
-    commandGateway.sendAndWait(CreateOrderCommand.of(orderId, request.productName()));
+    commandGateway.sendAndWait(
+        CreateOrderCommand.of(orderId, request.productName()));
     return CreateOrderResponse.created(orderId);
 }
 
 @GetMapping("/orders")
 public List<OrderSummary> getOrders() {
     return queryGateway
-            .query(new GetOrdersQuery(), ResponseTypes.multipleInstancesOf(OrderSummary.class))
+            .query(
+                new GetOrdersQuery(), 
+                ResponseTypes.multipleInstancesOf(OrderSummary.class))
             .join();
 }
 //}
@@ -1073,6 +1080,8 @@ Axon Framework らしさが最も強く現れるクラスです。
 「Command → Event → 状態更新」
 をつないでいることを意識しながら読むとよいでしょう。
 
+//pagebreak
+
 //emlist[OrderAggregate.java（抜粋）][java]{
 @Aggregate
 public class OrderAggregate {
@@ -1138,7 +1147,8 @@ public class OrderProjection {
 
     @EventHandler
     public void on(OrderCreatedEvent event) {
-        orders.add(OrderSummary.create(event.getOrderId(), event.getProductName()));
+        orders.add(
+            OrderSummary.create(event.getOrderId(), event.getProductName()));
     }
 
     @QueryHandler
