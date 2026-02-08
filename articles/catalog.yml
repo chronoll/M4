@@ -2,7 +2,6 @@ PREDEF:
   - preface.re
 
 CHAPS:
-  - article.re
   - kurotaka.re
   - momiji.re
   - mocchan.re
