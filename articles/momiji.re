@@ -213,6 +213,13 @@ Event Sourcingは、
  * 事実を積み重ね、その結果として状態を導き出す
 
 という発想への転換です。
+
+@<img>{state-vs-event}は、State Sourcing と Event Sourcing の違いを示したものです。
+State Sourcing では現在の値だけが残り、経緯は別途調べる必要があります。
+一方 Event Sourcing では、事実の積み重ねそのものがデータであり、現在の状態はそこから導き出されます。
+
+//image[state-vs-event][State Sourcing と Event Sourcing の比較]
+
 この考え方があるからこそ、次に紹介する CQRS や、Axon FrameworkにおけるAggregateの設計が、自然な形で成り立つようになります。
 
 //image[ginko-kouza-2][Eventに基づいた状態表現]
@@ -302,6 +309,10 @@ Event をもとに作られた、
 
 この違いを設計として明確に分けて扱おう、という考え方が
 CQRS（Command Query Responsibility Segregation）です。
+
+この関係を図で示すと、@<img>{cqrs-overview}のようになります。
+
+//image[cqrs-overview][CQRS の書き込み側と読み取り側の分離]
 
 Event Sourcing は、
 書き込み処理において「正しさ」と「履歴の完全性」を重視します。
@@ -927,6 +938,10 @@ Axon Framework の基本的な流れを整理すると、
  4. Event が発行・適用され、状態が更新される
  5. その結果が読み取り側にも反映される
 
+この流れを図にまとめると、@<img>{axon-flow}のようになります。
+
+//image[axon-flow][Axon Framework の処理フロー（POST /order）]
+
 次の節では、
 この流れを踏まえた上で、
 実際のコードを見ながら、
@@ -1089,6 +1104,10 @@ public class OrderAggregate {
  * @<code>{@EventSourcingHandler} … 発行された Event を受け取り、Aggregate の状態（フィールド）を更新するメソッドです。3章で触れたとおり、Aggregate のフィールドは、このメソッドの中でのみ変更するのが Axon のルールです。
 
 このように、1つの Aggregate クラスの中に「Command を受け取る」「Event を発行する」「Event で状態を更新する」という3つの役割がまとまっています。
+
+この流れを図にすると、@<img>{aggregate-internal}のようになります。
+
+//image[aggregate-internal][Aggregate 内部の処理フロー]
 
 ==== 読み取り側（Query / Projection）を見る
 

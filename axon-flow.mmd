@@ -1,0 +1,18 @@
+graph LR
+    C["[1] Controller<br/>リクエスト受信"]
+    CG["[2] CommandGateway<br/>Command 送信"]
+    A["[3] OrderAggregate<br/>@CommandHandler"]
+    E["[4] Event 発行<br/>@EventSourcingHandler<br/>状態更新"]
+    P["Projection<br/>@EventHandler<br/>読み取りデータ更新"]
+    R["[5] レスポンス返却"]
+
+    C -->|"CreateOrderCommand"| CG
+    CG -->|"ルーティング"| A
+    A -->|"OrderCreatedEvent"| E
+    E -.->|"Event 配信"| P
+    E --> R
+
+    style C fill:#e8eaf6,stroke:#3949ab
+    style A fill:#fff3e0,stroke:#e65100
+    style E fill:#e8f5e9,stroke:#2e7d32
+    style P fill:#e3f2fd,stroke:#1565c0
