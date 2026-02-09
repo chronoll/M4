@@ -1,0 +1,20 @@
+graph TB
+    Client["クライアント"]
+
+    Client -->|"POST /order"| Write
+    Client -->|"GET /orders"| Read
+
+    subgraph Write["書き込み側（Command）"]
+        direction TB
+        CMD["Command"] -->|"ビジネスルール判定"| AGG["Aggregate"] -->|"Event 発行"| EVS["Event Store"]
+    end
+
+    subgraph Read["読み取り側（Query）"]
+        direction TB
+        PRJ["Projection"] -->|"データ返却"| QRY["Query"]
+    end
+
+    PRJ -.-|"Event を配信"| EVS
+
+    style Write fill:#fff3e0,stroke:#e65100
+    style Read fill:#e3f2fd,stroke:#1565c0

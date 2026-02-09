@@ -2,7 +2,6 @@ PREDEF:
   - preface.re
 
 CHAPS:
-  - article.re
   - kurotaka.re
   - momiji.re
   - mocchan.re
@@ -11,4 +10,5 @@ CHAPS:
 APPENDIX:
 
 POSTDEF:
+  - atogaki.re
   - contributors.re

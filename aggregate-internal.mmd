@@ -1,0 +1,17 @@
+graph LR
+    subgraph OA["OrderAggregate"]
+        direction LR
+        CH["@CommandHandler<br/>CreateOrderCommand を受け取る"]
+        AP["AggregateLifecycle.apply()<br/>OrderCreatedEvent を発行"]
+        ESH["@EventSourcingHandler<br/>orderId, productName を更新"]
+        CH -->|"ルール判定OK"| AP
+        AP -->|"Event 適用"| ESH
+    end
+
+    CMD_IN["Command 到着"] --> CH
+    ESH --> STATE["状態更新完了"]
+
+    style OA fill:#fff8e1,stroke:#f57f17
+    style CH fill:#e3f2fd,stroke:#1565c0
+    style AP fill:#fce4ec,stroke:#c62828
+    style ESH fill:#e8f5e9,stroke:#2e7d32

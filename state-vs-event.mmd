@@ -1,0 +1,16 @@
+graph LR
+    subgraph SS["State Sourcing"]
+        direction TB
+        SS_DB["DB: status = SHIPPED"] --> SS_Q["なぜSHIPPEDに？"]
+        SS_Q -. "ログを別途調査" .-> SS_LOG["操作ログ（あれば）"]
+    end
+
+    subgraph ES["Event Sourcing"]
+        direction TB
+        ES_E1["① 注文が作成された"] --> ES_E2["② 注文が発送された"] --> ES_E3["③ 現在の状態: SHIPPED"]
+    end
+
+    SS ~~~ ES
+
+    style SS fill:#f9f0f0,stroke:#c44
+    style ES fill:#f0f9f0,stroke:#4a4
