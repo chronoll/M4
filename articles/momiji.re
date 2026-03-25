@@ -1010,8 +1010,10 @@ public List<OrderSummary> getOrders() {
 
 ここで注目してほしいのは、@<code>{commandGateway} と @<code>{queryGateway} です。
 
- * @<code>{CommandGateway} は、Command を Axon Framework に送り届けるための窓口です。Controller は、ドメインの処理を直接呼び出すのではなく、この窓口を通じて Command を送信します。@<code>{sendAndWait} は、Command の処理が完了するまで待機するメソッドです。
+ * @<code>{CommandGateway} は、Command を Axon Framework に送り届けるための窓口です。Controller は、ドメインの処理を直接呼び出すのではなく、この窓口を通じて Command を送信します。@<code>{sendAndWait} は、Command の処理が完了するまで同期的に待機するメソッドです。CQRS では Command を非同期に処理することも多いですが、本書ではシンプルさを優先して同期的な方法を使用しています。
  * @<code>{QueryGateway} は、読み取り側にデータを問い合わせるための窓口です。Controller は、データベースを直接参照するのではなく、この窓口を通じて Query を送信し、結果を受け取ります。
+
+なお、@<code>{orderId} が Controller 側で生成されている点にも注目してください。CQRS では、Command の送信側が事前に ID を決めるのが一般的なパターンです。これにより、Command の処理結果を待たずに、生成した ID をそのままレスポンスとして返すことができます。
 
 つまり、Controller 自身は「何をするか」を知りません。Command や Query を適切な窓口に渡すだけです。実際の処理は、Axon Framework が裏側で適切なハンドラに届けてくれます。
 
@@ -1058,7 +1060,7 @@ public class OrderCreatedEvent {
 フィールドの数や実装の細かさよりも、
 @<strong>{名前と役割}を見ることが大切です。
 
-==== Aggregate（正しさを守る場所）を見る
+==== Aggregate（不変条件を守る場所）を見る
 
 次に、@<code>{OrderAggregate} を見ます。
 
@@ -1093,9 +1095,17 @@ public class OrderAggregate {
     @AggregateIdentifier
     private String orderId;
     private String productName;
+    private OrderStatus status;
+
+    protected OrderAggregate() {
+        // Axon による Event Sourcing 復元用（引数なしコンストラクタ）
+    }
 
     @CommandHandler
     public OrderAggregate(CreateOrderCommand command) {
+        if (command.getProductName() == null || command.getProductName().isBlank()) {
+            throw new IllegalArgumentException("商品名は必須です");
+        }
         AggregateLifecycle.apply(OrderCreatedEvent.of(
                 command.getOrderId(), command.getProductName()));
     }
@@ -1104,6 +1114,7 @@ public class OrderAggregate {
     public void on(OrderCreatedEvent event) {
         this.orderId = event.getOrderId();
         this.productName = event.getProductName();
+        this.status = OrderStatus.CREATED;
     }
 }
 //}
@@ -1112,9 +1123,10 @@ public class OrderAggregate {
 
  * @<code>{@Aggregate} … このクラスが Axon の Aggregate であることを宣言します。これにより、Axon Framework がこのクラスを管理対象として認識し、Command のルーティングや Event Sourcing による状態復元を自動的に行います。
  * @<code>{@AggregateIdentifier} … この Aggregate を一意に識別するフィールドを示します。Axon は、この値を使って「どの Aggregate インスタンスに対する操作か」を判別します。先ほどの @<code>{@TargetAggregateIdentifier} と対になる存在です。Command 側の @<code>{@TargetAggregateIdentifier} で指定された値と、Aggregate 側の @<code>{@AggregateIdentifier} の値が一致することで、正しい Aggregate に Command が届きます。
- * @<code>{@CommandHandler} … このメソッド（またはコンストラクタ）が Command を受け取る場所であることを示します。今回はコンストラクタに付いているため、@<code>{CreateOrderCommand} を受け取って新しい Aggregate を作成する処理になっています。
+ * @<code>{引数なしコンストラクタ} … Axon が Event Sourcing で Aggregate を復元する際に必要です。Axon はまずこの引数なしコンストラクタで空のインスタンスを作成し、その後、保存済みの Event を @<code>{@EventSourcingHandler} で順番に再生して最新の状態を復元します。@<code>{protected} にしておくことで、外部からの直接利用を防ぎつつ、Axon からのアクセスを許可します。
+ * @<code>{@CommandHandler} … このメソッド（またはコンストラクタ）が Command を受け取る場所であることを示します。今回はコンストラクタに付いているため、@<code>{CreateOrderCommand} を受け取って新しい Aggregate を作成する処理になっています。Command の処理に入る前に不変条件のチェック（ここでは商品名の必須チェック）を行い、ルールに違反していれば例外を投げて Event の発行を防ぎます。
  * @<code>{AggregateLifecycle.apply(...)} … Aggregate の中から Event を発行するためのメソッドです。ここで発行された Event は、Axon によって記録され、直後に同じ Aggregate 内の @<code>{@EventSourcingHandler} に届けられます。
- * @<code>{@EventSourcingHandler} … 発行された Event を受け取り、Aggregate の状態（フィールド）を更新するメソッドです。3章で触れたとおり、Aggregate のフィールドは、このメソッドの中でのみ変更するのが Axon のルールです。
+ * @<code>{@EventSourcingHandler} … 発行された Event を受け取り、Aggregate の状態（フィールド）を更新するメソッドです。3章で触れたとおり、Aggregate のフィールドは、このメソッドの中でのみ変更するのが Axon のルールです。ここでは @<code>{status} フィールドも @<code>{CREATED} に設定しています。
 
 このように、1つの Aggregate クラスの中に「Command を受け取る」「Event を発行する」「Event で状態を更新する」という3つの役割がまとまっています。
 
@@ -1147,12 +1159,13 @@ public class OrderAggregate {
 @Component
 public class OrderProjection {
 
-    private final List<OrderSummary> orders = new ArrayList<>();
+    private final List<OrderSummary> orders = new CopyOnWriteArrayList<>();
 
     @EventHandler
     public void on(OrderCreatedEvent event) {
         orders.add(
-            OrderSummary.create(event.getOrderId(), event.getProductName()));
+            OrderSummary.create(
+                event.getOrderId(), event.getProductName(), OrderStatus.CREATED));
     }
 
     @QueryHandler
@@ -1164,8 +1177,10 @@ public class OrderProjection {
 
 ここで注目してほしいアノテーションが 2 つあります。
 
- * @<code>{@EventHandler} … Event を受け取って処理するメソッドに付けます。ここでは、@<code>{OrderCreatedEvent} を受け取り、読み取り用のデータ（@<code>{OrderSummary}）をリストに追加しています。
+ * @<code>{@EventHandler} … Event を受け取って処理するメソッドに付けます。ここでは、@<code>{OrderCreatedEvent} を受け取り、読み取り用のデータ（@<code>{OrderSummary}）をリストに追加しています。@<code>{OrderStatus.CREATED} を渡しているのは、このイベントが「注文が作成された」事実を表しているためです。
  * @<code>{@QueryHandler} … Query を受け取って結果を返すメソッドに付けます。ここでは、@<code>{GetOrdersQuery} を受け取り、注文一覧を返しています。先ほど Controller で見た @<code>{queryGateway.query(...)} の呼び出しが、最終的にこのメソッドに届きます。
+
+なお、このサンプルではリストの実装に @<code>{CopyOnWriteArrayList} を使用しています。@<code>{@EventHandler} と @<code>{@QueryHandler} は異なるスレッドから呼ばれる可能性があるため、スレッドセーフなデータ構造を使う必要があります。実際の運用では、データベースを読み取り用ストアとして使用するのが一般的です。
 
 ここで、1つ疑問に思った人もいるかもしれません。Aggregate のコードには @<code>{@EventSourcingHandler} がありましたが、Projection のコードでは @<code>{@EventHandler} になっています。どちらも Event を受け取るメソッドですが、役割が異なります。
 
