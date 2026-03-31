@@ -991,10 +991,12 @@ Axon Framework の基本的な流れを整理すると、
 
 //emlist[OrderController.java（抜粋）][java]{
 @PostMapping("/order")
-public CreateOrderResponse createOrder(@RequestBody CreateOrderRequest request) {
+public CreateOrderResponse createOrder(
+        @RequestBody CreateOrderRequest request) {
     String orderId = UUID.randomUUID().toString();
     commandGateway.sendAndWait(
-        CreateOrderCommand.of(orderId, request.productName()));
+        CreateOrderCommand.of(
+            orderId, request.productName()));
     return CreateOrderResponse.created(orderId);
 }
 
@@ -1002,8 +1004,9 @@ public CreateOrderResponse createOrder(@RequestBody CreateOrderRequest request) 
 public List<OrderSummary> getOrders() {
     return queryGateway
             .query(
-                new GetOrdersQuery(), 
-                ResponseTypes.multipleInstancesOf(OrderSummary.class))
+                new GetOrdersQuery(),
+                ResponseTypes.multipleInstancesOf(
+                    OrderSummary.class))
             .join();
 }
 //}
@@ -1103,7 +1106,8 @@ public class OrderAggregate {
 
     @CommandHandler
     public OrderAggregate(CreateOrderCommand command) {
-        if (command.getProductName() == null || command.getProductName().isBlank()) {
+        if (command.getProductName() == null
+                || command.getProductName().isBlank()) {
             throw new IllegalArgumentException("商品名は必須です");
         }
         AggregateLifecycle.apply(OrderCreatedEvent.of(
@@ -1159,13 +1163,16 @@ public class OrderAggregate {
 @Component
 public class OrderProjection {
 
-    private final List<OrderSummary> orders = new CopyOnWriteArrayList<>();
+    private final List<OrderSummary> orders =
+        new CopyOnWriteArrayList<>();
 
     @EventHandler
     public void on(OrderCreatedEvent event) {
         orders.add(
             OrderSummary.create(
-                event.getOrderId(), event.getProductName(), OrderStatus.CREATED));
+                event.getOrderId(),
+                event.getProductName(),
+                OrderStatus.CREATED));
     }
 
     @QueryHandler
